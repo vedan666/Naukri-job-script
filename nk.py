@@ -18,7 +18,7 @@ service = Service(GECKO_PATH)
 driver = webdriver.Firefox(service=service, options=firefox_options)
 
 def scrape_jobs():
-    driver.get("https://www.naukri.com/devops-engineer-azure-devops-jobs?k=devops%2C%20devops%20engineer%2C%20azure%20devops&nignbevent_src=jobsearchDeskGNB&experience=3&jobAge=1")
+    driver.get("your_naukri_url_here")
 
     # Read existing data to avoid duplicates
     existing_urls = set()
