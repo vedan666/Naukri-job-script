@@ -94,5 +94,4 @@ Index,Job Title,Company Name,URL
 MIT License. Feel free to use, modify, and distribute!  
 **Disclaimer**: Use this script responsibly. Respect website terms of service and robots.txt rules.
 ``` 
-
-**Pro Tip** 🔥: Run the script daily with a scheduler (e.g., `cron`) to keep your job list updated!
+Pro Tip 🔥: Run the script daily with a scheduler (e.g., `cron`) to keep your job list updated!
