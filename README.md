@@ -1,4 +1,3 @@
-markdown
 # Naukri DevOps Jobs Scraper 🚀
 
 A Python script to scrape DevOps-related job listings from Naukri.com with advanced filtering for skills like Azure, Terraform, Prometheus, and more. Perfect for job hunters targeting DevOps roles!
