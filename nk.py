@@ -5,51 +5,29 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, TimeoutException
-import csv
-import os
 
-# Path to the GeckoDriver executable
 GECKO_PATH = r"C:\tools\geckodriver.exe"
+HTML_FILE = 'devops_jobs.html'
 
-# CSV file to store job data and the columns for the CSV file
-CSV_FILE = 'devops_jobs.csv'
-COLUMNS = ["Index", "Job Title", "Company Name", "URL"]
-
-# Configure Firefox options to run in headless mode
 firefox_options = Options()
 firefox_options.add_argument("--headless")
-
-# Create a service object with the GeckoDriver executable
 service = Service(GECKO_PATH)
-
-# Initialize the Firefox WebDriver with the specified service and options
 driver = webdriver.Firefox(service=service, options=firefox_options)
 
 def scrape_jobs():
-    # URL of the Naukri page to scrape
-    driver.get("your_naukri_url_here")
+    driver.get("https://www.naukri.com/devops-engineer-azure-devops-jobs?k=devops%2C%20devops%20engineer%2C%20azure%20devops&nignbevent_src=jobsearchDeskGNB&experience=3&jobAge=1")
 
-    # Read existing data from the CSV file to avoid duplicates
-    existing_urls = set()
-    last_index = 0
-    if os.path.exists(CSV_FILE):
-        with open(CSV_FILE, 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                existing_urls.add(row['URL'])
-                last_index = int(row['Index'])
-
-    # List to store new job entries
     jobs = []
-
-    # Set of required skills to filter jobs
-    required_skills = {'azure', 'terraform', 'prometheus', 'grafana', 'git', 'github', 'devops', 'ci/cd', 'iac', 'pipelines', 'yaml'}
+    seen_urls = set()  # To avoid duplicates in the current run
+    required_skills = {
+        'azure', 'terraform', 'prometheus', 'grafana',
+        'git', 'github', 'devops', 'ci/cd', 'iac', 'pipelines', 'yaml'
+    }
 
     page_number = 1
     while True:
         print(f"📄 Scraping Page {page_number}...")
         try:
-            # Wait for job cards to load on the page
             job_cards = WebDriverWait(driver, 10).until(
                 EC.presence_of_all_elements_located((By.CLASS_NAME, 'srp-jobtuple-wrapper'))
             )
@@ -59,36 +37,32 @@ def scrape_jobs():
 
         for job in job_cards:
             try:
-                # Extract job URL
                 title_element = job.find_element(By.CLASS_NAME, 'title')
                 url = title_element.get_attribute('href')
-                if url in existing_urls:
-                    continue  # Skip duplicates
+                if url in seen_urls:
+                    continue  # Skip duplicates within the same run
 
-                # Extract basic job information
                 title = title_element.text.strip()
                 company = job.find_element(By.CLASS_NAME, 'comp-name').text.strip()
                 description = job.find_element(By.CLASS_NAME, 'job-desc').text.strip()
 
-                # Check if job description contains any required skills
+                # Check if at least one of the required skills is present
                 combined_text = (title + " " + description).lower()
                 if not any(skill in combined_text for skill in required_skills):
                     continue
 
-                # Add the job to the jobs list
-                last_index += 1
+                seen_urls.add(url)
                 jobs.append({
-                    "Index": last_index,
+                    "Index": len(jobs) + 1,
                     "Job Title": title,
                     "Company Name": company,
                     "URL": url
                 })
-                existing_urls.add(url)  # Prevent duplicates in current run
 
             except StaleElementReferenceException:
                 continue
 
-        # Pagination logic to go to the next page
+        # Pagination logic: try to click the "Next" button
         try:
             next_button = WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.XPATH, "//span[text()='Next']"))
@@ -102,15 +76,60 @@ def scrape_jobs():
             print("🚫 No more pages.")
             break
 
-    # Write the collected job data to the CSV file (append if file exists)
-    mode = 'a' if os.path.exists(CSV_FILE) else 'w'
-    with open(CSV_FILE, mode, newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=COLUMNS)
-        if mode == 'w':
-            writer.writeheader()
-        writer.writerows(jobs)
+    # Generate the HTML file with the scraped jobs
+    html_content = """<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>DevOps Jobs</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { text-align: left; padding: 8px; border: 1px solid #ddd; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        /* This class changes the link color to red once clicked */
+        a.clicked { color: red; }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var links = document.querySelectorAll("a.job-link");
+            links.forEach(function(link) {
+                link.addEventListener("click", function() {
+                    this.classList.add("clicked");
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>DevOps Jobs</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Index</th>
+                <th>Job Title</th>
+                <th>Company Name</th>
+                <th>URL</th>
+            </tr>
+        </thead>
+        <tbody>
+"""
+    for job in jobs:
+        html_content += f"""            <tr>
+                <td>{job['Index']}</td>
+                <td>{job['Job Title']}</td>
+                <td>{job['Company Name']}</td>
+                <td><a href="{job['URL']}" target="_blank" class="job-link">{job['URL']}</a></td>
+            </tr>
+"""
+    html_content += """        </tbody>
+    </table>
+</body>
+</html>"""
 
-    print(f"✅ Added {len(jobs)} new jobs. Total jobs: {last_index}")
+    with open(HTML_FILE, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+
+    print(f"✅ HTML file generated: {HTML_FILE}")
 
 if __name__ == "__main__":
     scrape_jobs()
