@@ -9,14 +9,14 @@ A Python script to scrape DevOps-related job listings from Naukri.com with advan
 - **Duplicate Prevention**: Skips already scraped jobs using a CSV tracker.
 - **Skill-Based Filtering**: Targets jobs requiring skills like `Azure`, `Terraform`, `CI/CD`, and more.
 - **Pagination Support**: Automatically navigates through all available pages.
-- **CSV Export**: Saves results to `devops_jobs.csv` with details like Job Title, Company, and URL.
+- **HTML Export**: Saves results to `devops_jobs.HTML` with details like Job Title, Company, and URL.
 
 ---
 
 ## Prerequisites 📋
 - Python 3.x
 - [Geckodriver](https://github.com/mozilla/geckodriver/releases) (for Selenium/Firefox)
-- Libraries: `selenium`, `csv`
+- Libraries: `selenium`
 
 ---
 
